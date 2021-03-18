@@ -1,0 +1,17 @@
+{
+  "name": "com.orels1.udon-toolkit",
+  "displayName": "UdonToolkit",
+  "version": "1.0.0-rc.1",
+  "description": "Purpose-built Udon Behaviours and tools to make your own",
+  "homepage": "https://github.com/orels1/UdonToolkit#readme",
+  "bugs": {
+    "url": "https://github.com/orels1/UdonToolkit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orels1/UdonToolkit.git"
+  },
+  "license": "MIT",
+  "author": "orels1",
+  "unity": "2018.3"
+}
