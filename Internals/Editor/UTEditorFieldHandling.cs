@@ -27,6 +27,12 @@ namespace UdonToolkit {
               tabOpen = GUILayout.Toolbar(tabOpen, tabNames);
               if (EditorGUI.EndChangeCheck()) {
                 targetProp.intValue = tabOpen;
+                if (fieldCache.ContainsKey(tabSaveTarget)) {
+                  var fieldChange = fieldCache?[tabSaveTarget].onValueChaged;
+                  if (fieldChange != null) {
+                    fieldChange.Invoke(t, new object[] {targetProp});
+                  }
+                }
               } 
             }
             else {
@@ -122,21 +128,20 @@ namespace UdonToolkit {
     }
 
     private void PropertyFieldWithUndo(SerializedProperty prop, object origValue) {
-      var rect = EditorGUILayout.GetControlRect();
-      rect.xMax -= 24;
-      EditorGUI.PropertyField(rect, prop, new GUIContent(prop.displayName));
-      var btnRect = rect;
-      btnRect.xMin = rect.xMax;
-      btnRect.xMax += 24;
-      btnRect.y -= 2;
-      if (GUI.Button(btnRect, "", UTStyles.UndoButton)) {
+      EditorGUILayout.BeginHorizontal();
+      EditorGUILayout.PropertyField(prop, new GUIContent(prop.displayName));
+      var mainRect = GUILayoutUtility.GetLastRect();
+      var rect = EditorGUILayout.GetControlRect(GUILayout.Width(UTStyles.UndoButton.fixedWidth), GUILayout.Height(UTStyles.UndoButton.fixedHeight));
+      rect.y = mainRect.yMax - rect.height;
+      if (GUI.Button(rect, "", UTStyles.UndoButton)) {
         tT.GetField(prop.name).SetValue(t, origValue);
       }
+      EditorGUILayout.EndHorizontal();
     }
     
     private void DrawField(UTField field, SerializedProperty prop) {
       // this is taken directly from U# code
-      var origValue = programAsset.GetRealProgram().Heap.GetHeapVariable(programAsset.GetRealProgram().SymbolTable.GetAddressFromSymbol(prop.name));
+      var origValue = nonUBMode ? null : programAsset.GetRealProgram().Heap.GetHeapVariable(programAsset.GetRealProgram().SymbolTable.GetAddressFromSymbol(prop.name));
       var fieldVal = tT.GetField(prop.name)?.GetValue(t);
       var isNonDefault = fieldVal != null && origValue != null && !origValue.Equals(fieldVal) ;
       

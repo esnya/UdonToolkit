@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -11,12 +12,31 @@ using Object = UnityEngine.Object;
 
 namespace UdonToolkit {
   public class CameraSystemSetup: EditorWindow {
+    private string GetToolkitPath() {
+      var ms = MonoScript.FromScriptableObject( this );
+      var scriptFilePath = AssetDatabase.GetAssetPath( ms );
+
+      var fileInfo = new FileInfo(scriptFilePath);
+      var dirInfo = fileInfo.Directory.Parent.Parent;
+      var scriptFolder = dirInfo.ToString().Replace("\\", "/");
+      var assetsPath = Application.dataPath;
+      scriptFolder = scriptFolder.Replace(assetsPath, "Assets");
+      return scriptFolder;
+    }
+
+
+    private string toolkitPath;
+
     [MenuItem("Window/UdonToolkit/Camera System Setup")]
     public static void ShowWindow() {
       var pos = new Vector2(0, 0);
       var size = new Vector2(450, 750);
       var window = GetWindowWithRect(typeof(CameraSystemSetup), new Rect(pos, size),  true, "Camera System Setup") as CameraSystemSetup;
       window.Show();
+    }
+
+    private void OnEnable() {
+      toolkitPath = GetToolkitPath();
     }
 
     private enum GuideStyle {
@@ -82,7 +102,7 @@ namespace UdonToolkit {
         var newGuideStyle = (GuideStyle) EditorGUILayout.EnumPopup("Guide Panel Style", guideStyle);
         if (newGuideStyle != guideStyle || standObj == null || standObjEditor == null) {
           var standPath = newGuideStyle == GuideStyle.Futuristic ? SciFiStandPath : TikiStandPath;
-          standObj = LoadSystemAssetAtPath(standPath, typeof(object));
+          standObj = AssetDatabase.LoadAssetAtPath(GetAssetPath(standPath), typeof(object));
           standObjEditor = UnityEditor.Editor.CreateEditor(standObj);
         }
         var r = GUILayoutUtility.GetRect(450, 150);
@@ -140,7 +160,7 @@ namespace UdonToolkit {
 
     private void AddGuide() {
       var standPath = guideStyle == GuideStyle.Futuristic ? SciFiStandPath : TikiStandPath;
-      var standPrefab = LoadSystemAssetAtPath(standPath, typeof(GameObject));
+      var standPrefab = AssetDatabase.LoadAssetAtPath(GetAssetPath(standPath), typeof(GameObject));
       var instancedStand = PrefabUtility.InstantiatePrefab(standPrefab) as GameObject;
       instancedStand.transform.position = cameraSpot.position + Vector3.down * 0.275f + cameraSpot.forward * -0.110f + cameraSpot.right * -0.043f;
       instancedStand.transform.rotation = cameraSpot.rotation;
@@ -160,18 +180,17 @@ namespace UdonToolkit {
       cameraPPLayer = emptyLayer;
     }
 
-    private static Object LoadSystemAssetAtPath(string path, Type type)
-    {
-      var assetPath = AssetDatabase.GetAssetPath(Resources.Load<Texture2D>("Component BG")).Replace("Internals/Resources/Component BG.png", $"Systems/{path}");
-      return AssetDatabase.LoadAssetAtPath(assetPath, type);
-    }
+    private static readonly string systemPath = "Camera System";
+    private static readonly string SciFiStandPath = "Camera Stand.prefab";
+    private static readonly string TikiStandPath = "Camera Stand Tiki.prefab";
+    private static readonly string CameraSystemPath = "UT Camera System.prefab";
+    private static readonly string DefaultPPProfilePath = "Assets/Camera Lens PP.asset";
+    private static readonly string FocusFarPPProfilePath = "Assets/Camera Lens PP Far.asset";
+    private static readonly string FocalNearPPProfilePath = "Assets/Camera Lens PP Focal.asset";
 
-    private static readonly string SciFiStandPath = "Camera System/Camera Stand.prefab";
-    private static readonly string TikiStandPath = "Camera System/Camera Stand Tiki.prefab";
-    private static readonly string CameraSystemPath = "Camera System/UT Camera System.prefab";
-    private static readonly string DefaultPPProfilePath = "Camera System/Assets/Camera Lens PP.asset";
-    private static readonly string FocusFarPPProfilePath = "Camera System/Assets/Camera Lens PP Far.asset";
-    private static readonly string FocalNearPPProfilePath = "Camera System/Assets/Camera Lens PP Focal.asset";
+    private string GetAssetPath(string path) {
+      return $"{toolkitPath}/Systems/{systemPath}/{path}";
+    }
 
     private void RunCameraSetup() {
       setup = false;
@@ -185,7 +204,7 @@ namespace UdonToolkit {
       }
 
       // spawn camera
-      var cameraPrefab = LoadSystemAssetAtPath(CameraSystemPath, typeof(GameObject));
+      var cameraPrefab = AssetDatabase.LoadAssetAtPath(GetAssetPath(CameraSystemPath), typeof(GameObject));
       var instancedCamera = PrefabUtility.InstantiatePrefab(cameraPrefab) as GameObject;
       PrefabUtility.UnpackPrefabInstance(instancedCamera, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
 
@@ -222,17 +241,17 @@ namespace UdonToolkit {
       defaultPPVolume.isGlobal = true;
       defaultPPVolume.weight = 1;
       defaultPPVolume.sharedProfile =
-        (PostProcessProfile) LoadSystemAssetAtPath(DefaultPPProfilePath, typeof(PostProcessProfile));
+        (PostProcessProfile) AssetDatabase.LoadAssetAtPath(GetAssetPath(DefaultPPProfilePath), typeof(PostProcessProfile));
       focusFarPPVolume.isGlobal = true;
       focusFarPPVolume.weight = 0;
       focusFarPPVolume.priority = 1;
       focusFarPPVolume.sharedProfile =
-        (PostProcessProfile) LoadSystemAssetAtPath(FocusFarPPProfilePath, typeof(PostProcessProfile));
+        (PostProcessProfile) AssetDatabase.LoadAssetAtPath(GetAssetPath(FocusFarPPProfilePath), typeof(PostProcessProfile));
       focalNearPPVolume.isGlobal = true;
       focalNearPPVolume.weight = 0;
       focalNearPPVolume.priority = 1;
       focalNearPPVolume.sharedProfile =
-        (PostProcessProfile) LoadSystemAssetAtPath(FocalNearPPProfilePath, typeof(PostProcessProfile));
+        (PostProcessProfile) AssetDatabase.LoadAssetAtPath(GetAssetPath(FocalNearPPProfilePath), typeof(PostProcessProfile));
 
       // move to root
       var childCount = instancedCamera.transform.childCount;
